@@ -4,36 +4,131 @@
 <meta charset="UTF-8">
 <title>Six or Not Six Fruit Animation</title>
 <style>
-body {margin:0;background:#ddd;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:Century Gothic;}
-.container {text-align:center;}
-h1 {color:#333;}
-.canvas {width:900px;height:500px;background:white;position:relative;overflow:hidden;border-radius:10px;box-shadow:0 4px 6px rgba(0,0,0,0.2);margin:20px auto;}
-img {position:absolute;width:110px;transform:translate(-50%,-50%);filter:drop-shadow(6px 10px 12px rgba(0,0,0,0.3));}
-.controls {margin-top:15px;}
-button {font-size:20px;padding:10px 20px;margin:0 10px;cursor:pointer;background:#007bff;color:white;border:none;border-radius:5px;font-weight:bold;}
-button:hover {background:#0056b3;}
-.info {margin-top:10px;font-size:16px;color:#333;}
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-family: 'Arial', sans-serif;
+}
+
+.container {
+  text-align: center;
+  background: white;
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+h1 {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 32px;
+}
+
+.canvas {
+  width: 900px;
+  height: 500px;
+  background: #f9f9f9;
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 3px solid #667eea;
+  margin: 20px 0;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+img {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  filter: drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.2));
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.controls {
+  margin: 20px 0;
+}
+
+button {
+  font-size: 18px;
+  padding: 12px 30px;
+  margin: 0 10px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+.info {
+  margin-top: 20px;
+  font-size: 20px;
+  color: #333;
+  font-weight: bold;
+  min-height: 30px;
+}
+
+.stats {
+  margin-top: 15px;
+  font-size: 14px;
+  color: #666;
+}
 </style>
 </head>
 <body>
 
 <div class="container">
-<h1>Six or Not Six Fruit Animation</h1>
-
-<div class="canvas" id="c"></div>
-
-<div class="controls">
-<button onclick="start()">Start</button>
-<button onclick="pause()">Pause</button>
-</div>
-
-<div class="info">
-<p id="groupInfo">Click Start to begin!</p>
-</div>
+  <h1>🍎 Six or Not Six 🍎</h1>
+  
+  <div class="canvas" id="canvas"></div>
+  
+  <div class="controls">
+    <button onclick="startAnimation()">▶ Start</button>
+    <button onclick="stopAnimation()">⏸ Pause</button>
+  </div>
+  
+  <div class="info">
+    <p id="result">Press Start to begin</p>
+    <div class="stats">
+      <p id="count">Total: 0 fruits</p>
+    </div>
+  </div>
 </div>
 
 <script>
-const fruitsData = [
+const FRUITS = [
   'images/apple.png',
   'images/orange.png',
   'images/banana.png',
@@ -42,80 +137,94 @@ const fruitsData = [
   'images/watermelon.png'
 ];
 
-let run=false, t;
+const CANVAS = document.getElementById('canvas');
+const RESULT = document.getElementById('result');
+const COUNT = document.getElementById('count');
 
-function r(a,b){
-  return Math.floor(Math.random()*(b-a+1))+a;
+let isRunning = false;
+let timeoutId = null;
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function validPosition(existing, x, y, minDist){
-  for(let p of existing){
-    let dx = p.x - x;
-    let dy = p.y - y;
-    if(Math.sqrt(dx*dx + dy*dy) < minDist) return false;
+function isValidPosition(positions, x, y, minDistance) {
+  for (let pos of positions) {
+    const distance = Math.sqrt((pos.x - x) ** 2 + (pos.y - y) ** 2);
+    if (distance < minDistance) return false;
   }
   return true;
 }
 
-function gen(){
-  const c = document.getElementById("c");
-  c.innerHTML = "";
-
-  let isSix = Math.random() < 0.5;
-  let total = isSix ? 6 : [1,2,3,4,5,7][r(0,5)];
-
-  let fruit1Index = r(0,5);
-  let fruit2Index = r(0,5);
-  while(fruit2Index === fruit1Index){
-    fruit2Index = r(0,5);
+function selectTwoRandomFruits() {
+  let fruit1 = FRUITS[getRandomInt(0, FRUITS.length - 1)];
+  let fruit2 = FRUITS[getRandomInt(0, FRUITS.length - 1)];
+  
+  while (fruit2 === fruit1) {
+    fruit2 = FRUITS[getRandomInt(0, FRUITS.length - 1)];
   }
+  
+  return [fruit1, fruit2];
+}
 
-  let f1 = fruitsData[fruit1Index];
-  let f2 = fruitsData[fruit2Index];
-
-  let count1 = r(1, total-1);
-  let count2 = total - count1;
-
-  let placed = [];
-
-  function place(src){
-    let tries = 0;
-    while(tries < 100){
-      let x = r(80, 820);
-      let y = r(80, 420);
-      if(validPosition(placed, x, y, 130)){
-        let img = document.createElement("img");
-        img.src = src;
-        img.style.left = x + "px";
-        img.style.top = y + "px";
-        c.appendChild(img);
-        placed.push({x, y});
+function displayFruits() {
+  CANVAS.innerHTML = '';
+  
+  const isSix = Math.random() < 0.5;
+  const totalFruits = isSix ? 6 : [1, 2, 3, 4, 5, 7][getRandomInt(0, 5)];
+  
+  const [fruit1, fruit2] = selectTwoRandomFruits();
+  
+  const count1 = getRandomInt(1, totalFruits - 1);
+  const count2 = totalFruits - count1;
+  
+  const positions = [];
+  
+  function addFruit(imageSource) {
+    let attempts = 0;
+    while (attempts < 50) {
+      const x = getRandomInt(80, 820);
+      const y = getRandomInt(80, 420);
+      
+      if (isValidPosition(positions, x, y, 130)) {
+        const img = document.createElement('img');
+        img.src = imageSource;
+        img.style.left = x + 'px';
+        img.style.top = y + 'px';
+        CANVAS.appendChild(img);
+        positions.push({ x, y });
         return;
       }
-      tries++;
+      attempts++;
     }
   }
-
-  for(let i = 0; i < count1; i++) place(f1);
-  for(let i = 0; i < count2; i++) place(f2);
-
-  document.getElementById("groupInfo").textContent = isSix ? "Group of 6!" : `Group of ${total}`;
+  
+  for (let i = 0; i < count1; i++) addFruit(fruit1);
+  for (let i = 0; i < count2; i++) addFruit(fruit2);
+  
+  RESULT.textContent = isSix ? '✓ GROUP OF 6!' : `✗ Group of ${totalFruits}`;
+  COUNT.textContent = `Total: ${totalFruits} fruits`;
 }
 
-function loop(){
-  if(!run) return;
-  gen();
-  t = setTimeout(loop, 4000);
+function startAnimation() {
+  if (isRunning) return;
+  isRunning = true;
+  displayFruits();
+  scheduleNext();
 }
 
-function start(){
-  run = true;
-  loop();
+function scheduleNext() {
+  if (!isRunning) return;
+  timeoutId = setTimeout(() => {
+    displayFruits();
+    scheduleNext();
+  }, 4000);
 }
 
-function pause(){
-  run = false;
-  clearTimeout(t);
+function stopAnimation() {
+  isRunning = false;
+  clearTimeout(timeoutId);
+  RESULT.textContent = 'Paused';
 }
 </script>
 
