@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Six or Not Six Fruit Animation</title>
+<style>
+body {margin:0;background:#ddd;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:Century Gothic;}
+.container {text-align:center;}
+h1 {color:#333;}
+.canvas {width:900px;height:500px;background:white;position:relative;overflow:hidden;border-radius:10px;box-shadow:0 4px 6px rgba(0,0,0,0.2);margin:20px auto;}
+img {position:absolute;width:110px;transform:translate(-50%,-50%);filter:drop-shadow(6px 10px 12px rgba(0,0,0,0.3));}
+.controls {margin-top:15px;}
+button {font-size:20px;padding:10px 20px;margin:0 10px;cursor:pointer;background:#007bff;color:white;border:none;border-radius:5px;font-weight:bold;}
+button:hover {background:#0056b3;}
+.info {margin-top:10px;font-size:16px;color:#333;}
+</style>
+</head>
+<body>
+
+<div class="container">
+<h1>Six or Not Six Fruit Animation</h1>
+
+<div class="canvas" id="c"></div>
+
+<div class="controls">
+<button onclick="start()">Start</button>
+<button onclick="pause()">Pause</button>
+</div>
+
+<div class="info">
+<p id="groupInfo">Click Start to begin!</p>
+</div>
+</div>
+
+<script>
+// Fruit image paths
+const fruitsData = [
+  'images/apple.png',
+  'images/orange.png',
+  'images/banana.png',
+  'images/pear.png',
+  'images/strawberry.png',
+  'images/watermelon.png'
+];
+
+let run=false,t;
+
+function r(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+
+function validPosition(existing, x, y, minDist){
+  for(let p of existing){
+    let dx = p.x - x;
+    let dy = p.y - y;
+    if(Math.sqrt(dx*dx + dy*dy) < minDist) return false;
+  }
+  return true;
+}
+
+function gen(){
+  const c=document.getElementById("c");
+  c.innerHTML="";
+
+  let six=Math.random()<0.5;
+  let total=six?6:[1,2,3,4,5,7][r(0,5)];
+
+  let p1=r(1,total-1);
+  let p2=total-p1;
+
+  let f1 = fruitsData[r(0,5)];
+  let f2 = fruitsData[r(0,5)];
+
+  let placed=[];
+
+  function place(src){
+    let tries=0;
+    while(tries<100){
+      let x=r(80,820);
+      let y=r(80,420);
+      if(validPosition(placed,x,y,130)){
+        let img=document.createElement("img");
+        img.src=src;
+        img.style.left=x+"px";
+        img.style.top=y+"px";
+        c.appendChild(img);
+        placed.push({x,y});
+        return;
+      }
+      tries++;
+    }
+  }
+
+  for(let i=0;i<p1;i++) place(f1);
+  for(let i=0;i<p2;i++) place(f2);
+
+  document.getElementById("groupInfo").textContent = six ? "Group of 6!" : `Group of ${total}`;
+}
+
+function loop(){if(!run)return;gen();t=setTimeout(loop,2000);}
+function start(){run=true;loop();}
+function pause(){run=false;clearTimeout(t);}
+</script>
+
+</body>
+</html>
