@@ -33,7 +33,6 @@ button:hover {background:#0056b3;}
 </div>
 
 <script>
-// Fruit image paths
 const fruitsData = [
   'images/apple.png',
   'images/orange.png',
@@ -43,9 +42,11 @@ const fruitsData = [
   'images/watermelon.png'
 ];
 
-let run=false,t;
+let run=false, t;
 
-function r(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function r(a,b){
+  return Math.floor(Math.random()*(b-a+1))+a;
+}
 
 function validPosition(existing, x, y, minDist){
   for(let p of existing){
@@ -57,47 +58,65 @@ function validPosition(existing, x, y, minDist){
 }
 
 function gen(){
-  const c=document.getElementById("c");
-  c.innerHTML="";
+  const c = document.getElementById("c");
+  c.innerHTML = "";
 
-  let six=Math.random()<0.5;
-  let total=six?6:[1,2,3,4,5,7][r(0,5)];
+  let isSix = Math.random() < 0.5;
+  let total = isSix ? 6 : [1,2,3,4,5,7][r(0,5)];
 
-  let p1=r(1,total-1);
-  let p2=total-p1;
+  let fruit1Index = r(0,5);
+  let fruit2Index = r(0,5);
+  while(fruit2Index === fruit1Index){
+    fruit2Index = r(0,5);
+  }
 
-  let f1 = fruitsData[r(0,5)];
-  let f2 = fruitsData[r(0,5)];
+  let f1 = fruitsData[fruit1Index];
+  let f2 = fruitsData[fruit2Index];
 
-  let placed=[];
+  let count1 = r(1, total-1);
+  let count2 = total - count1;
+
+  let placed = [];
 
   function place(src){
-    let tries=0;
-    while(tries<100){
-      let x=r(80,820);
-      let y=r(80,420);
-      if(validPosition(placed,x,y,130)){
-        let img=document.createElement("img");
-        img.src=src;
-        img.style.left=x+"px";
-        img.style.top=y+"px";
+    let tries = 0;
+    while(tries < 100){
+      let x = r(80, 820);
+      let y = r(80, 420);
+      if(validPosition(placed, x, y, 130)){
+        let img = document.createElement("img");
+        img.src = src;
+        img.style.left = x + "px";
+        img.style.top = y + "px";
         c.appendChild(img);
-        placed.push({x,y});
+        placed.push({x, y});
         return;
       }
       tries++;
     }
   }
 
-  for(let i=0;i<p1;i++) place(f1);
-  for(let i=0;i<p2;i++) place(f2);
+  for(let i = 0; i < count1; i++) place(f1);
+  for(let i = 0; i < count2; i++) place(f2);
 
-  document.getElementById("groupInfo").textContent = six ? "Group of 6!" : `Group of ${total}`;
+  document.getElementById("groupInfo").textContent = isSix ? "Group of 6!" : `Group of ${total}`;
 }
 
-function loop(){if(!run)return;gen();t=setTimeout(loop,2000);}
-function start(){run=true;loop();}
-function pause(){run=false;clearTimeout(t);}
+function loop(){
+  if(!run) return;
+  gen();
+  t = setTimeout(loop, 4000);
+}
+
+function start(){
+  run = true;
+  loop();
+}
+
+function pause(){
+  run = false;
+  clearTimeout(t);
+}
 </script>
 
 </body>
